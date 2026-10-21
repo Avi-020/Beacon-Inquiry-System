@@ -92,3 +92,11 @@ export async function appendEnquiry(e: NewEnquiry, status: "New" | "Repeat") {
     },
   });
 }
+// All enquiry rows (A..N), header excluded. Used by the dashboard.
+export async function readEnquiryRows(): Promise<string[][]> {
+  const res = await getSheets().spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "Enquiries!A2:N",
+  });
+  return (res.data.values ?? []) as string[][];
+}
