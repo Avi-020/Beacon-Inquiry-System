@@ -18,13 +18,19 @@ function credentials() {
       .replace(/\\n/g, "\n"),
   };
 }
-const { email, key } = credentials();
-const auth = new google.auth.JWT({
-  email,
-  key,
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
-const sheets = google.sheets({ version: "v4", auth });
+// Built on first use, so a bad env var can never crash the whole page.
+let cached: ReturnType<typeof google.sheets> | null = null;
+function getSheets() {
+  if (cached) return cached;
+  const { email, key } = credentials();
+  const auth = new google.auth.JWT({
+    email,
+    key,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  cached = google.sheets({ version: "v4", auth });
+  return cached;
+}
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!;
 
 export type NewEnquiry = {
@@ -48,7 +54,7 @@ const makeId = () =>
 
 // One cheap read: only the Mobile column (D)
 export async function mobileExists(mobile: string): Promise<boolean> {
-  const res = await sheets.spreadsheets.values.get({
+  const res = await getSheets().spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Enquiries!D2:D",
   });
@@ -59,7 +65,7 @@ export async function mobileExists(mobile: string): Promise<boolean> {
 // Last year %, Source, Status, Assigned to, Next follow-up date, Last updated
 export async function appendEnquiry(e: NewEnquiry, status: "New" | "Repeat") {
   const now = nowIST();
-  await sheets.spreadsheets.values.append({
+  await getSheets().spreadsheets.values.append({
     spreadsheetId: SHEET_ID,
     range: "Enquiries!A1",
     valueInputOption: "RAW",
