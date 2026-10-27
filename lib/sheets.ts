@@ -20,7 +20,7 @@ function credentials() {
 }
 // Built on first use, so a bad env var can never crash the whole page.
 let cached: ReturnType<typeof google.sheets> | null = null;
-function getSheets() {
+export function getSheets() {
   if (cached) return cached;
   const { email, key } = credentials();
   const auth = new google.auth.JWT({
@@ -31,7 +31,7 @@ function getSheets() {
   cached = google.sheets({ version: "v4", auth });
   return cached;
 }
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!;
+export const SHEET_ID = process.env.GOOGLE_SHEET_ID!;
 
 export type NewEnquiry = {
   student: string;
@@ -96,7 +96,7 @@ export async function appendEnquiry(e: NewEnquiry, status: "New" | "Repeat") {
 export async function readEnquiryRows(): Promise<string[][]> {
   const res = await getSheets().spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Enquiries!A2:N",
+    range: "Enquiries!A2:O",
   });
   return (res.data.values ?? []) as string[][];
 }
